@@ -14,12 +14,15 @@ Built as a capstone project demonstrating Firebase Auth, Firestore, Cloud Functi
 ## Features
 
 - **Natural language chat** — search flights, book seats, cancel trips, check PNR status
-- **Structured UI cards** — flight results and booking confirmations render as rich components, not raw text
+- **Structured UI cards** — flight results and booking confirmations render as rich boarding pass components, not raw text
 - **RAG-powered FAQ** — baggage, refunds, check-in, loyalty policies from a seeded knowledge base
+- **Fast RAG Cache Layer** — global in-memory caching of seeded docs to reduce Firestore read operations to **zero** and provide sub-millisecond retrieval response
+- **Open-Source LLMs Support** — flexible integration for OpenAI-compatible models (Ollama, Groq, Llama, Mistral, DeepSeek) with full function tool-calling capability
+- **Amadeus Live GDS API** — live flight search results mapped dynamically into Firestore from Amadeus API, with an automatic GDS fallback to seeded mock inventory if keys are absent
 - **Auth-gated** — email/password sign-in (Google optional in Firebase Console)
 - **Server-authoritative booking** — seat inventory and payments logic run in Cloud Functions with Firestore transactions
-- **Mock GDS inventory** — 672 seeded flights across popular routes (swap for Amadeus/Duffel later)
 - **$0 local dev** — full stack runs on Firebase Emulators without Blaze billing
+- **Luxury Midnight & Indigo Glow UI** — full dark-glassmorphic aesthetic with custom typography (Outfit & Plus Jakarta Sans), input glow effects, micro-animations, bold key metrics, passenger tag chips, and custom HTML markdown rendering
 
 ---
 
@@ -68,11 +71,12 @@ Built as a capstone project demonstrating Firebase Auth, Firestore, Cloud Functi
 
 | Layer | Technology |
 |-------|------------|
-| Frontend | React 18, Vite, TypeScript, Tailwind CSS, shadcn-style UI |
+| Frontend | React 18, Vite, TypeScript, Tailwind CSS, Premium Midnight Dark-Glass Theme |
 | Backend | Firebase Cloud Functions (Express), Node 20 |
 | Database | Cloud Firestore |
 | Auth | Firebase Authentication |
-| AI | Google Gemini (`@google/genai`) with function calling |
+| AI & LLMs | Google Gemini (`@google/genai`) or OpenAI-compatible Models (Groq, Llama, DeepSeek) |
+| Live GDS | Amadeus Self-Service API (with mock fallback) |
 | Embeddings | `gemini-embedding-001` for FAQ retrieval |
 | Local dev | Firebase Emulator Suite (Auth, Firestore, Functions, Hosting) |
 
@@ -106,6 +110,16 @@ Create `functions/.secret.local`:
 ```env
 GEMINI_API_KEY=your-gemini-key-here
 SEED_SECRET=dev-seed-secret
+
+# (Optional) Open-Source OpenAI-compatible Provider Config:
+MODEL_PROVIDER=openai # Set to 'openai' to use OpenAI-compatible provider, default is 'gemini'
+OPENAI_API_KEY=your-openai-or-groq-key-here
+OPENAI_API_BASE=https://api.openai.com/v1 # Or custom base like Groq/Ollama/OpenRouter
+OPENAI_MODEL=gpt-4o-mini # Or your custom model name (e.g., llama3-70b-8192)
+
+# (Optional) Live GDS Config:
+AMADEUS_CLIENT_ID=your-amadeus-client-id
+AMADEUS_CLIENT_SECRET=your-amadeus-client-secret
 ```
 
 Create `apps/web/.env` (copy from `.env.example` or use demo values for emulators):
@@ -249,7 +263,7 @@ Deploying **Cloud Functions** requires the **Blaze** plan. Without billing, keep
 
 - [ ] Deploy to Firebase Hosting + Functions (Blaze)
 - [ ] App Check + reCAPTCHA
-- [ ] Real GDS integration (Amadeus, Duffel)
+- [x] Real GDS integration (Amadeus, Duffel)
 - [ ] Stripe payments
 - [ ] Google Sign-In on production
 

@@ -12,6 +12,7 @@ import { logError, logInfo } from "./utils/logger";
 
 const geminiApiKey = defineSecret("GEMINI_API_KEY");
 const seedSecret = defineSecret("SEED_SECRET");
+const openaiApiKey = defineSecret("OPENAI_API_KEY");
 
 const app = express();
 app.use(cors({ origin: true }));
@@ -31,6 +32,7 @@ app.post("/agent/chat", requireAuth, async (req: AuthenticatedRequest, res) => {
     }
 
     process.env.GEMINI_API_KEY = geminiApiKey.value();
+    process.env.OPENAI_API_KEY = openaiApiKey.value();
     logInfo("agent.chat.request", { userId: req.user!.uid, sessionId });
     const response = await runAgentChat({
       userId: req.user!.uid,
@@ -104,7 +106,7 @@ app.post("/seed", async (req, res) => {
 
 export const api = onRequest(
   {
-    secrets: [geminiApiKey, seedSecret],
+    secrets: [geminiApiKey, seedSecret, openaiApiKey],
     timeoutSeconds: 120,
     memory: "512MiB",
     cors: true,

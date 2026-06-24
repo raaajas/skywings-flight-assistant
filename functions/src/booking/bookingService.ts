@@ -1,12 +1,77 @@
 import { randomBytes } from "crypto";
 import { db } from "../utils/firebaseAdmin";
 import type { Booking, CabinClass, Flight, Passenger } from "../types";
+import { searchAmadeusFlights } from "../services/amadeusService";
 
 const FLIGHTS = "flights";
 const BOOKINGS = "bookings";
 
 function mapFlight(id: string, data: FirebaseFirestore.DocumentData): Flight {
   return { id, ...(data as Omit<Flight, "id">) };
+}
+
+const CITY_NAMES: Record<string, string> = {
+  DEL: "Delhi",
+  BOM: "Mumbai",
+  BLR: "Bangalore",
+  MAA: "Chennai",
+  CCU: "Kolkata",
+  HYD: "Hyderabad",
+  GOI: "Goa",
+  PNQ: "Pune",
+  COK: "Cochin",
+  SXR: "Srinagar",
+};
+
+function generateMockFlightsForRoute(
+  origin: string,
+  destination: string,
+  departureDate: string,
+): Flight[] {
+  const flights: Flight[] = [];
+  const originCity = CITY_NAMES[origin] || `${origin} City`;
+  const destinationCity = CITY_NAMES[destination] || `${destination} City`;
+  
+  const seed = (origin.charCodeAt(0) + destination.charCodeAt(0)) % 10;
+  const departureHours = [8, 12, 16, 21];
+  const flightDurations = [120, 150, 180, 210]; // Shorter domestic durations (2-3.5 hrs)
+  const basePrices = [3500, 4500, 6000, 7500]; // Realistic INR pricing
+
+  const cabins: Array<{ cabinClass: CabinClass; multiplier: number }> = [
+    { cabinClass: "economy", multiplier: 1 },
+    { cabinClass: "premium_economy", multiplier: 1.5 },
+    { cabinClass: "business", multiplier: 3.0 },
+    { cabinClass: "first", multiplier: 5.0 },
+  ];
+
+  // Generate 4 flights for this route on this date
+  for (let i = 0; i < 4; i += 1) {
+    const flightNum = `SW${String(100 + seed * 10 + i).padStart(3, "0")}`;
+    const depHour = departureHours[i];
+    const duration = flightDurations[(i + seed) % 4];
+    const basePrice = basePrices[(i + seed) % 4];
+    const cabin = cabins[i];
+
+    flights.push({
+      id: `gen_${origin}_${destination}_${departureDate}_${i}`,
+      flightNumber: flightNum,
+      airline: "SkyWings India",
+      origin,
+      originCity,
+      destination,
+      destinationCity,
+      departureDate,
+      departureTime: `${String(depHour).padStart(2, "0")}:00`,
+      arrivalTime: `${String((depHour + Math.floor(duration / 60)) % 24).padStart(2, "0")}:${String(duration % 60).padStart(2, "0")}`,
+      durationMinutes: duration,
+      cabinClass: cabin.cabinClass,
+      price: Math.round(basePrice * cabin.multiplier),
+      currency: "INR",
+      availableSeats: 15 + (i * 5),
+    });
+  }
+
+  return flights;
 }
 
 export async function searchFlights(params: {
@@ -22,6 +87,49 @@ export async function searchFlights(params: {
   const passengers = params.passengers ?? 1;
   const maxResults = params.maxResults ?? 10;
 
+  // Try live Amadeus flight search first
+  const liveFlights = await searchAmadeusFlights({
+    origin,
+    destination,
+    departureDate: params.departureDate,
+    passengers,
+    cabinClass: params.cabinClass,
+    maxResults,
+  });
+
+  if (liveFlights !== null) {
+    if (liveFlights.length > 0) {
+      // Dynamic Firestore caching: Store flights so they are bookable and viewable
+      const batch = db.batch();
+      for (const flight of liveFlights) {
+        const { id, ...data } = flight;
+        batch.set(db.collection(FLIGHTS).doc(id), data);
+      }
+      await batch.commit();
+    }
+    return liveFlights;
+  }
+
+  // Check if we need to dynamically generate flights for this date
+  const hasFlightsInDb = await db
+    .collection(FLIGHTS)
+    .where("origin", "==", origin)
+    .where("destination", "==", destination)
+    .where("departureDate", "==", params.departureDate)
+    .limit(1)
+    .get();
+
+  if (hasFlightsInDb.empty) {
+    const generated = generateMockFlightsForRoute(origin, destination, params.departureDate);
+    const batch = db.batch();
+    for (const flight of generated) {
+      const { id, ...data } = flight;
+      batch.set(db.collection(FLIGHTS).doc(id), data);
+    }
+    await batch.commit();
+  }
+
+  // Fallback: Query local database (mock flights)
   let query = db
     .collection(FLIGHTS)
     .where("origin", "==", origin)

@@ -1,25 +1,25 @@
 import type { KnowledgeDoc } from "../types";
 
 const ROUTES = [
-  { origin: "JFK", originCity: "New York", destination: "LHR", destinationCity: "London" },
-  { origin: "JFK", originCity: "New York", destination: "CDG", destinationCity: "Paris" },
-  { origin: "JFK", originCity: "New York", destination: "DXB", destinationCity: "Dubai" },
-  { origin: "LAX", originCity: "Los Angeles", destination: "NRT", destinationCity: "Tokyo" },
-  { origin: "LAX", originCity: "Los Angeles", destination: "SYD", destinationCity: "Sydney" },
-  { origin: "ORD", originCity: "Chicago", destination: "FRA", destinationCity: "Frankfurt" },
-  { origin: "SFO", originCity: "San Francisco", destination: "SIN", destinationCity: "Singapore" },
-  { origin: "MIA", originCity: "Miami", destination: "CUN", destinationCity: "Cancun" },
-  { origin: "BOS", originCity: "Boston", destination: "DUB", destinationCity: "Dublin" },
-  { origin: "SEA", originCity: "Seattle", destination: "ICN", destinationCity: "Seoul" },
-  { origin: "ATL", originCity: "Atlanta", destination: "MCO", destinationCity: "Orlando" },
-  { origin: "DFW", originCity: "Dallas", destination: "LAX", destinationCity: "Los Angeles" },
+  { origin: "DEL", originCity: "Delhi", destination: "BOM", destinationCity: "Mumbai" },
+  { origin: "DEL", originCity: "Delhi", destination: "BLR", destinationCity: "Bangalore" },
+  { origin: "BOM", originCity: "Mumbai", destination: "BLR", destinationCity: "Bangalore" },
+  { origin: "DEL", originCity: "Delhi", destination: "CCU", destinationCity: "Kolkata" },
+  { origin: "BOM", originCity: "Mumbai", destination: "MAA", destinationCity: "Chennai" },
+  { origin: "BLR", originCity: "Bangalore", destination: "HYD", destinationCity: "Hyderabad" },
+  { origin: "DEL", originCity: "Delhi", destination: "MAA", destinationCity: "Chennai" },
+  { origin: "BOM", originCity: "Mumbai", destination: "GOI", destinationCity: "Goa" },
+  { origin: "DEL", originCity: "Delhi", destination: "PNQ", destinationCity: "Pune" },
+  { origin: "DEL", originCity: "Delhi", destination: "COK", destinationCity: "Cochin" },
+  { origin: "MAA", originCity: "Chennai", destination: "BLR", destinationCity: "Bangalore" },
+  { origin: "CCU", originCity: "Kolkata", destination: "BLR", destinationCity: "Bangalore" },
 ];
 
 const CABINS = [
   { cabinClass: "economy" as const, multiplier: 1 },
-  { cabinClass: "premium_economy" as const, multiplier: 1.6 },
-  { cabinClass: "business" as const, multiplier: 3.2 },
-  { cabinClass: "first" as const, multiplier: 5.5 },
+  { cabinClass: "premium_economy" as const, multiplier: 1.5 },
+  { cabinClass: "business" as const, multiplier: 3.0 },
+  { cabinClass: "first" as const, multiplier: 5.0 },
 ];
 
 function addDays(base: Date, days: number): string {
@@ -42,12 +42,12 @@ export function buildSeedFlights() {
       for (const cabin of CABINS) {
         index += 1;
         const departureHour = 6 + (index % 12);
-        const durationMinutes = 180 + (index % 8) * 45;
-        const basePrice = 120 + (index % 20) * 35;
+        const durationMinutes = 120 + (index % 6) * 15; // Indian domestic flights are shorter (2-3 hrs)
+        const basePrice = 3500 + (index % 20) * 250; // Pricing in INR (₹3,500 to ₹8,500 base)
         flights.push({
           id: `flight_${index}`,
           flightNumber: padFlightNumber(index),
-          airline: "SkyWings Airlines",
+          airline: "SkyWings India",
           origin: route.origin,
           originCity: route.originCity,
           destination: route.destination,
@@ -58,7 +58,7 @@ export function buildSeedFlights() {
           durationMinutes,
           cabinClass: cabin.cabinClass,
           price: Math.round(basePrice * cabin.multiplier),
-          currency: "USD",
+          currency: "INR",
           availableSeats: 20 + (index % 30),
         });
       }
@@ -73,70 +73,70 @@ export const seedKnowledgeDocs: Omit<KnowledgeDoc, "id">[] = [
     title: "Checked baggage allowance",
     category: "baggage",
     content:
-      "Economy passengers may check one bag up to 23 kg (50 lb). Premium economy allows two bags. Business and first class allow two bags up to 32 kg each. Overweight bags incur a $75 fee per segment.",
-    keywords: ["baggage", "luggage", "checked", "weight", "allowance"],
+      "As per DGCA guidelines, on domestic flights in India, economy class passengers are allowed 1 checked bag up to 15 kg. Premium economy allows 20 kg. Business and first class allow up to 30 kg total checked baggage. Overweight baggage is charged at ₹550 per kg.",
+    keywords: ["baggage", "luggage", "checked", "weight", "allowance", "15kg", "domestic"],
   },
   {
     title: "Carry-on policy",
     category: "baggage",
     content:
-      "All fares include one carry-on bag up to 56 x 45 x 25 cm plus one personal item. Basic economy on select routes limits carry-on to personal item only.",
-    keywords: ["carry-on", "hand luggage", "personal item"],
+      "Passengers on domestic Indian flights are allowed 1 piece of cabin baggage up to 7 kg (dimensions 55 x 35 x 25 cm) plus 1 small personal item (handbag, laptop bag, or duty-free shopping bag).",
+    keywords: ["carry-on", "hand luggage", "personal item", "7kg", "cabin"],
   },
   {
     title: "Online check-in window",
     category: "check-in",
     content:
-      "Online check-in opens 24 hours before departure and closes 60 minutes before domestic flights or 90 minutes before international flights.",
-    keywords: ["check-in", "online", "boarding pass"],
+      "For domestic flights in India, check-in counters open 2 hours before departure and close 45 minutes prior. Web check-in is mandatory under current guidelines and is available from 48 hours up to 60 minutes before departure.",
+    keywords: ["check-in", "online", "boarding pass", "web check-in", "mandatory"],
   },
   {
     title: "Refund and cancellation policy",
     category: "refunds",
     content:
-      "Refundable fares receive a full refund to the original payment method within 7 business days. Non-refundable fares receive a travel credit minus a $50 change fee. Cancellations within 24 hours of booking are fully refundable for all fare types.",
-    keywords: ["refund", "cancel", "cancellation", "credit"],
+      "Refundable fares receive a full refund minus a standard cancellation fee (approx. ₹3,000 per sector) within 7 working days. Under Indian DGCA rules, cancellations made within 24 hours of booking (provided flight departure is at least 7 days later) are fully refundable without fees.",
+    keywords: ["refund", "cancel", "cancellation", "fee", "dgca", "charges"],
   },
   {
-    title: "SkyMiles loyalty program",
+    title: "SkyWings Club loyalty program",
     category: "loyalty",
     content:
-      "SkyMiles members earn 5 miles per dollar on economy, 7 on premium economy, 10 on business, and 12 on first class. Miles do not expire for active members with activity in the past 24 months.",
-    keywords: ["miles", "loyalty", "rewards", "skymiles"],
+      "SkyWings Club members earn 5 points per ₹100 spent on economy tickets, 7 on premium economy, 10 on business, and 12 on first class. Points can be redeemed for free flights and seat upgrades across all Indian domestic routes.",
+    keywords: ["points", "loyalty", "rewards", "club", "membership"],
   },
   {
     title: "Unaccompanied minors",
     category: "special assistance",
     content:
-      "Children aged 5-14 traveling alone must use the unaccompanied minor service. The fee is $100 each way on domestic routes and $150 on international routes.",
-    keywords: ["minor", "children", "unaccompanied"],
+      "Children aged 5-12 years traveling alone must use the unaccompanied minor service. The fee is ₹3,000 per sector on domestic Indian routes, and parents must fill out the declaration form at the airport.",
+    keywords: ["minor", "children", "unaccompanied", "alone", "kids"],
   },
   {
     title: "Pet travel policy",
     category: "special assistance",
     content:
-      "Small pets in approved carriers may travel in cabin on select routes for $125 each way. Pets over 8 kg must travel in cargo. Advance booking is required.",
-    keywords: ["pet", "animal", "dog", "cat"],
+      "Small pets (dogs, cats, birds) under 5 kg in government-approved carriers may travel in-cabin on select routes for ₹2,500 each way. Larger pets up to 32 kg must travel in the temperature-controlled cargo hold.",
+    keywords: ["pet", "animal", "dog", "cat", "cargo", "cabin"],
   },
   {
     title: "Seat selection",
     category: "seats",
     content:
-      "Standard seat selection is free at check-in. Preferred seats with extra legroom start at $25. Exit row seats require eligibility confirmation at the gate.",
-    keywords: ["seat", "legroom", "exit row"],
+      "Standard middle seats are free during web check-in. Preferred seats (window/aisle, front rows) or extra legroom seats (Emergency exit rows) are chargeable and start from ₹200 to ₹1,500.",
+    keywords: ["seat", "legroom", "exit row", "window", "chargeable"],
   },
   {
     title: "Flight delay compensation",
     category: "disruptions",
     content:
-      "For delays over 3 hours on controllable causes, passengers may request meal vouchers and rebooking at no cost. EU261-style compensation may apply on applicable routes.",
-    keywords: ["delay", "compensation", "disruption"],
+      "Under the DGCA Passenger Charter, if a flight is delayed by over 2 hours, the airline must provide free meals and refreshments. If delayed over 24 hours or cancelled without prior notice, passengers are eligible for free hotel accommodation or a full refund.",
+    keywords: ["delay", "compensation", "disruption", "dgca", "charter", "hotel"],
   },
   {
     title: "Special meals",
     category: "onboard",
     content:
-      "Vegetarian, vegan, kosher, halal, and gluten-free meals must be requested at least 24 hours before departure through Manage Booking or the assistant.",
-    keywords: ["meal", "vegetarian", "kosher", "halal", "food"],
+      "Special meals including Vegetarian (Hindu Veg / Jain Veg), Non-Vegetarian (Halal / Indian style), and diabetic-friendly meals can be pre-ordered for free at least 24 hours prior to departure.",
+    keywords: ["meal", "vegetarian", "jain", "halal", "food", "veg", "non-veg"],
   },
 ];

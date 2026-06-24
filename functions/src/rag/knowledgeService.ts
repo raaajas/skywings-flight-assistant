@@ -32,16 +32,25 @@ async function embedText(text: string, apiKey: string): Promise<number[]> {
   return values;
 }
 
+let cachedDocs: KnowledgeDoc[] | null = null;
+
+export function clearKnowledgeCache(): void {
+  cachedDocs = null;
+}
+
 export async function searchKnowledgeBase(
   query: string,
   apiKey: string,
   limit = 5,
 ): Promise<KnowledgeDoc[]> {
-  const snapshot = await db.collection(KNOWLEDGE).get();
-  const docs = snapshot.docs.map((doc) => ({
-    id: doc.id,
-    ...(doc.data() as Omit<KnowledgeDoc, "id">),
-  }));
+  if (!cachedDocs) {
+    const snapshot = await db.collection(KNOWLEDGE).get();
+    cachedDocs = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...(doc.data() as Omit<KnowledgeDoc, "id">),
+    }));
+  }
+  const docs = cachedDocs;
 
   const normalizedQuery = query.toLowerCase();
   const keywordMatches = docs.filter((doc) => {
@@ -81,6 +90,7 @@ export async function searchKnowledgeBase(
 }
 
 export async function embedKnowledgeDocuments(apiKey: string): Promise<number> {
+  clearKnowledgeCache();
   const snapshot = await db.collection(KNOWLEDGE).get();
   let updated = 0;
 

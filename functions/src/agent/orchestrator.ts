@@ -3,14 +3,13 @@ import { FieldValue } from "firebase-admin/firestore";
 import { db } from "../utils/firebaseAdmin";
 import {
   MODEL_CANDIDATES,
-  buildChatConfig,
   buildFunctionResponseParts,
-  createGenAiClient,
   formatModelError,
   sendWithRetry,
   shouldTryNextModel,
 } from "./geminiClient";
 import { buildToolTrace, executeTool } from "./tools";
+import { getChatSession, type ChatSession } from "./llmClient";
 import type { AgentChatResponse, ChatMessage, ToolCallRecord, UiPayload } from "../types";
 
 const MAX_TOOL_ROUNDS = 8;
@@ -117,7 +116,7 @@ export async function runAgentChat(params: {
   sessionId: string;
   message: string;
 }): Promise<AgentChatResponse> {
-  const apiKey = getGeminiApiKey();
+  const provider = process.env.MODEL_PROVIDER || "gemini";
   const history = await loadHistory(params.sessionId, params.userId);
   const today = new Date().toISOString().slice(0, 10);
   const userText = `[Today: ${today}]\n${params.message}`;
@@ -127,15 +126,8 @@ export async function runAgentChat(params: {
     content: params.message,
   });
 
-  return runWithModelFallback(apiKey, async (modelName) => {
-    const ai = createGenAiClient(apiKey);
-    const chat = ai.chats.create({
-      model: modelName,
-      config: buildChatConfig(),
-      history,
-    });
-
-    let response = await chat.sendMessage({ message: userText });
+  const runSession = async (chatSession: ChatSession, apiKey: string) => {
+    let response = await chatSession.sendMessage({ message: userText });
     const toolTrace: ToolCallRecord[] = [];
     let uiPayload: UiPayload | undefined;
     let rounds = 0;
@@ -160,7 +152,7 @@ export async function runAgentChat(params: {
         results.push(execution.result);
       }
 
-      response = await chat.sendMessage({
+      response = await chatSession.sendMessage({
         message: buildFunctionResponseParts(functionCalls, results),
       });
       rounds += 1;
@@ -181,5 +173,65 @@ export async function runAgentChat(params: {
       uiPayload,
       toolTrace: toolTrace.length ? toolTrace : undefined,
     };
-  });
+  };
+
+  if (provider === "openai") {
+    const apiKey = process.env.GEMINI_API_KEY || "";
+    const chatSession = getChatSession({
+      userId: params.userId,
+      history,
+      geminiApiKey: apiKey,
+      modelName: "",
+    });
+    return await runSession(chatSession, apiKey);
+  } else {
+    const apiKey = getGeminiApiKey();
+    try {
+      return await runWithModelFallback(apiKey, async (modelName) => {
+        const chatSession = getChatSession({
+          userId: params.userId,
+          history,
+          geminiApiKey: apiKey,
+          modelName,
+        });
+        return await runSession(chatSession, apiKey);
+      });
+    } catch (geminiError) {
+      const errorMsg = String(geminiError).toLowerCase();
+      const isQuotaError = errorMsg.includes("quota") || errorMsg.includes("rate limit") || errorMsg.includes("429");
+      if (isQuotaError) {
+        console.warn("Gemini API quota exceeded. Attempting automatic fallback to open-source LLM client...");
+        try {
+          process.env.MODEL_PROVIDER = "openai";
+          const chatSession = getChatSession({
+            userId: params.userId,
+            history,
+            geminiApiKey: apiKey,
+            modelName: "",
+          });
+          const result = await runSession(chatSession, apiKey);
+          process.env.MODEL_PROVIDER = "gemini";
+          return result;
+        } catch (fallbackError) {
+          console.warn("Open-source model fallback also failed. Using local rule-based mock engine to ensure chat is responsive...");
+          try {
+            process.env.MODEL_PROVIDER = "mock";
+            const mockSession = getChatSession({
+              userId: params.userId,
+              history,
+              geminiApiKey: apiKey,
+              modelName: "",
+            });
+            const result = await runSession(mockSession, apiKey);
+            process.env.MODEL_PROVIDER = "gemini";
+            return result;
+          } catch (mockError) {
+            process.env.MODEL_PROVIDER = "gemini";
+            throw geminiError;
+          }
+        }
+      }
+      throw geminiError;
+    }
+  }
 }

@@ -1,5 +1,5 @@
 import { db } from "../utils/firebaseAdmin";
-import { embedKnowledgeDocuments } from "../rag/knowledgeService";
+import { embedKnowledgeDocuments, clearKnowledgeCache } from "../rag/knowledgeService";
 import { buildSeedFlights, seedKnowledgeDocs } from "./seedData";
 
 export async function seedDatabase(geminiApiKey?: string) {
@@ -23,6 +23,7 @@ export async function seedDatabase(geminiApiKey?: string) {
     knowledgeBatch.set(db.collection("knowledge").doc(`kb_${index + 1}`), doc);
   });
   await knowledgeBatch.commit();
+  clearKnowledgeCache();
 
   let embeddedCount = 0;
   if (geminiApiKey) {

@@ -4,31 +4,137 @@
 
 @layer base {
   :root {
-    --background: 210 40% 98%;
-    --foreground: 222 47% 11%;
-    --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
-    --primary: 221 83% 53%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222 47% 11%;
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%;
-    --accent: 210 40% 96%;
-    --accent-foreground: 222 47% 11%;
+    /* Premium Midnight Deep Slate & Luminous Indigo theme */
+    --background: 224 71% 4%;
+    --foreground: 220 14% 96%;
+    --card: 224 71% 6%;
+    --card-foreground: 220 14% 96%;
+    --primary: 250 85% 65%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 224 30% 12%;
+    --secondary-foreground: 220 14% 96%;
+    --muted: 224 30% 10%;
+    --muted-foreground: 220 9% 60%;
+    --accent: 224 30% 15%;
+    --accent-foreground: 220 14% 96%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 221 83% 53%;
-    --radius: 0.75rem;
+    --border: 224 30% 16%;
+    --input: 224 30% 16%;
+    --ring: 250 85% 65%;
+    --radius: 1rem;
   }
 
   * {
     @apply border-border;
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6, .font-heading {
+    font-family: 'Outfit', sans-serif;
   }
 
   body {
-    @apply bg-background text-foreground antialiased;
+    @apply bg-background text-foreground antialiased selection:bg-primary/30 selection:text-white;
+    background-image: 
+      radial-gradient(at 0% 0%, hsla(250, 85%, 65%, 0.07) 0px, transparent 50%),
+      radial-gradient(at 100% 0%, hsla(190, 90%, 50%, 0.05) 0px, transparent 50%);
+    background-attachment: fixed;
   }
+}
+
+/* Glassmorphism & custom premium UI styles */
+.glass-panel {
+  @apply bg-card/65 backdrop-blur-lg border border-white/5 shadow-xl shadow-black/35 transition-all duration-300;
+}
+
+.glass-panel:hover {
+  border-color: rgba(99, 102, 241, 0.2);
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5), 0 0 20px 0 rgba(99, 102, 241, 0.05);
+}
+
+.glass-header {
+  @apply bg-card/75 backdrop-blur-lg border-b border-white/5;
+}
+
+.gradient-btn {
+  @apply bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-medium shadow-lg shadow-indigo-500/20 transition-all duration-300 hover:shadow-indigo-500/35 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98];
+}
+
+/* Glow inputs */
+input:focus, textarea:focus {
+  outline: none;
+  box-shadow: 0 0 15px rgba(99, 102, 241, 0.15) !important;
+  border-color: rgba(99, 102, 241, 0.3) !important;
+}
+
+/* Animations */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    opacity: 0.6;
+    filter: drop-shadow(0 0 4px rgba(99, 102, 241, 0.2));
+  }
+  50% {
+    opacity: 1;
+    filter: drop-shadow(0 0 12px rgba(99, 102, 241, 0.5));
+  }
+}
+
+.animate-slide-up {
+  animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 2s infinite ease-in-out;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-muted-foreground/20 rounded-full hover:bg-muted-foreground/30;
+}
+
+/* SVG flight route draw animation */
+@keyframes drawRoute {
+  from {
+    stroke-dashoffset: 200;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.animate-draw-route {
+  stroke-dasharray: 200;
+  animation: drawRoute 2s linear infinite;
 }
