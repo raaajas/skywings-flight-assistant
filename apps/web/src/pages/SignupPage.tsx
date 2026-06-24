@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { signupWithEmail } from "@/services/auth";
+import { loginWithGoogle, signupWithEmail } from "@/services/auth";
 
 export function SignupPage() {
   const [email, setEmail] = useState("");
@@ -72,7 +72,26 @@ export function SignupPage() {
               {loading ? "Creating Account..." : "Create Account"}
             </Button>
           </form>
-          <p className="mt-4 text-center text-xs text-muted-foreground">
+
+          <div className="relative py-1 flex items-center justify-center mt-4">
+            <span className="w-full border-t border-white/5"></span>
+            <span className="absolute bg-card px-3 text-[10px] uppercase font-bold text-muted-foreground/60 tracking-wider">or</span>
+          </div>
+
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full rounded-xl h-10 border-white/10 hover:bg-white/5 text-sm text-white hover:text-white transition-all duration-300 mt-4"
+            disabled={loading}
+            onClick={() => {
+              setLoading(true);
+              loginWithGoogle().catch((err: Error) => setError(err.message)).finally(() => setLoading(false));
+            }}
+          >
+            Continue with Google
+          </Button>
+
+          <p className="mt-4 text-center text-xs text-muted-foreground pt-2">
             Already have an account?{" "}
             <Link className="text-primary font-semibold underline-offset-4 hover:underline" to="/login">
               Sign in
