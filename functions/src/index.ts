@@ -113,3 +113,11 @@ export const api = onRequest(
   },
   app,
 );
+
+// Support running as a standalone Express server (e.g. on Render, Koyeb, etc.)
+if (process.env.PORT || process.env.STANDALONE === "true") {
+  const PORT = process.env.PORT || 8080;
+  app.listen(PORT, () => {
+    console.log(`Standalone API server listening on port ${PORT}`);
+  });
+}
