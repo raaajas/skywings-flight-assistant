@@ -14,7 +14,7 @@ const geminiApiKey = defineSecret("GEMINI_API_KEY");
 const seedSecret = defineSecret("SEED_SECRET");
 const openaiApiKey = defineSecret("OPENAI_API_KEY");
 
-const app = express();
+export const app = express();
 app.use(cors({ origin: true }));
 app.use(express.json({ limit: "1mb" }));
 app.use(rateLimit);
