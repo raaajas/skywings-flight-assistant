@@ -15,7 +15,12 @@ const seedSecret = defineSecret("SEED_SECRET");
 const openaiApiKey = defineSecret("OPENAI_API_KEY");
 
 export const app = express();
-app.use(cors({ origin: true }));
+app.use(
+  cors({
+    origin: true,
+    allowedHeaders: ["Content-Type", "Authorization", "Bypass-Tunnel-Reminder"],
+  })
+);
 app.use(express.json({ limit: "1mb" }));
 app.use(rateLimit);
 

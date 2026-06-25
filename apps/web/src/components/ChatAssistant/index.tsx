@@ -79,7 +79,7 @@ export function ChatAssistant() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let active = true;
@@ -100,8 +100,22 @@ export function ChatAssistant() {
   }, []);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, loading]);
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    // Use ResizeObserver to smoothly scroll to bottom whenever the container contents resize
+    const observer = new ResizeObserver(() => {
+      container.scrollTo({
+        top: container.scrollHeight,
+        behavior: "smooth",
+      });
+    });
+
+    observer.observe(container);
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
 
   const sendMessage = async (text: string) => {
     if (!sessionId || !text.trim() || loading) {
@@ -166,7 +180,7 @@ export function ChatAssistant() {
           ))}
         </div>
 
-        <div className="flex-1 space-y-5 overflow-y-auto rounded-xl border border-white/5 bg-slate-950/20 p-4 shadow-inner">
+        <div ref={scrollContainerRef} className="flex-1 space-y-5 overflow-y-auto rounded-xl border border-white/5 bg-slate-950/20 p-4 shadow-inner">
           {messages.length === 0 && !loading && (
             <div className="flex flex-col items-center justify-center min-h-[360px] text-center p-8 animate-fade-in max-w-md mx-auto space-y-6">
               {/* Futuristic AI Brand Indicator */}
@@ -256,7 +270,6 @@ export function ChatAssistant() {
               <span className="text-xs font-semibold uppercase tracking-wider text-primary/80 animate-pulse">SkyWings Agent is formulating response...</span>
             </div>
           )}
-          <div ref={bottomRef} />
         </div>
 
         {error && <p className="text-xs font-semibold text-destructive pl-1">{error}</p>}

@@ -14,7 +14,9 @@
     "emulators:stop": "powershell -ExecutionPolicy Bypass -File scripts/stop-emulators.ps1",
     "seed:local": "node scripts/seed-local.mjs",
     "dev": "npm run build:functions && concurrently \"npm run emulators\" \"npm run dev:web\"",
-    "deploy": "firebase deploy"
+    "deploy": "firebase deploy",
+    "tunnel": "node scripts/tunnel-manager.mjs"
+
   },
   "devDependencies": {
     "concurrently": "^9.1.2",

@@ -23,6 +23,8 @@ Built as a capstone project demonstrating Firebase Auth, Firestore, Cloud Functi
 - **Server-authoritative booking** — seat inventory and payments logic run in Cloud Functions with Firestore transactions
 - **$0 local dev** — full stack runs on Firebase Emulators without Blaze billing
 - **Luxury Midnight & Indigo Glow UI** — full dark-glassmorphic aesthetic with custom typography (Outfit & Plus Jakarta Sans), input glow effects, micro-animations, bold key metrics, passenger tag chips, and custom HTML markdown rendering
+- **Self-Healing SSH Tunnel Manager** — local Express API backend dynamically publishes its current tunnel URL to Firestore, enabling the live hosted frontend to communicate with it automatically without Blaze plan costs or manual updates
+- **Smooth ResizeObserver Chat Scroll** — resolves scrolling issues caused by asynchronously rendering flight cards and images by listening to scroll container layout shifts and auto-scrolling to the exact bottom
 
 ---
 
@@ -180,9 +182,71 @@ Open http://localhost:5173 (or the port Vite prints).
 | `npm run emulators` | Start Firebase emulators (Java required) |
 | `npm run emulators:stop` | Free emulator ports on Windows |
 | `npm run seed:local` | Seed flights + knowledge base |
+| `npm run tunnel` | Start the self-healing SSH tunnel to sync local backend port 8888 with Firestore |
 | `npm run build` | Build web + functions |
 | `npm run build:functions` | Compile TypeScript functions |
-| `npm run deploy` | Deploy to Firebase (requires Blaze plan) |
+| `npm run deploy` | Deploy to Firebase (requires Blaze plan / Firebase Hosting) |
+
+---
+
+## Live Deploy & Self-Healing Local Backend Tunnel
+
+Because standard Firebase Cloud Functions require a paid **Blaze** plan, this project uses a hybrid architecture that keeps the API running locally (free) while hosting the React frontend on the public internet (**Firebase Hosting**).
+
+To make this seamless and robust, we implemented a **Self-Healing SSH Tunnel Manager**:
+
+### How It Works
+
+```
+┌─────────────────────────────────┐
+│ React Frontend (Firebase Hosted) │
+└────────────────┬────────────────┘
+                 │
+                 │ 1. Resolves dynamic base URL from Firestore (/config/api)
+                 ▼
+┌─────────────────────────────────┐
+│ Firestore DB                    │
+└────────────────▲────────────────┘
+                 │
+                 │ 2. Writes / updates active tunnel URL
+                 ▼
+┌─────────────────────────────────┐
+│ Local Tunnel Manager            │
+│ (ssh -R nokey@localhost.run)    │
+└────────────────▲────────────────┘
+                 │
+                 │ 3. Forwards port 8888
+                 ▼
+┌─────────────────────────────────┐
+│ Local Express API Server        │
+└─────────────────────────────────┘
+```
+
+1. **Dynamic URL Resolution**: The frontend app does not use a hardcoded API URL. Instead, it reads the document at `/config/api` in Firestore on application startup, caches it, and uses it as the base URL for all API requests.
+2. **Self-Healing SSH Tunnel**: Running `npm run tunnel` starts an SSH reverse tunnel to `localhost.run`, exposing local port `8888` (where the local backend server runs) to a public `.lhr.life` address.
+3. **Automatic Synchronization**: The tunnel manager parses the generated URL from SSH stdout and saves it directly to Firestore at `/config/api`. If the SSH connection drops, the script automatically reconnects, obtains a new URL, and updates Firestore in real-time.
+4. **CORS Bypass**: To bypass `localhost.run`'s warning/reminder screen, the frontend app injects a `Bypass-Tunnel-Reminder: true` header into API requests. The backend is configured to support this custom header in its CORS configuration.
+
+### How to Run the Live Setup
+
+1. **Obtain Firebase Credentials**:
+   Download a Firebase Admin Service Account Key JSON file from the Firebase Console (under Project Settings -> Service Accounts). Save it as `adc.json` in the root of the project (this path is already in `.gitignore`).
+
+2. **Start the API Server**:
+   Ensure your local API backend is running (either by starting emulators via `npm run emulators` or running the express function server locally).
+
+3. **Start the Tunnel Manager**:
+   In a separate terminal, run:
+   ```bash
+   npm run tunnel
+   ```
+   This will output:
+   `[TunnelManager] Detected tunnel URL: https://[random-subdomain].lhr.life`
+   `[TunnelManager] Updated Firestore API URL to: https://[random-subdomain].lhr.life`
+
+4. **Visit the Live App**:
+   Navigate to the hosted application URL. The React client will automatically retrieve the correct backend URL from Firestore, allowing the live app to interact with your local agent server and database!
+
 
 ---
 

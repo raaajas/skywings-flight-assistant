@@ -1,14 +1,16 @@
 import type { AgentChatResponse, Booking, ChatSession } from "@/types";
-import { getApiBaseUrl } from "./firebase";
+import { resolveApiBaseUrl } from "./firebase";
 import { getIdToken } from "./auth";
 
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const token = await getIdToken();
-  const response = await fetch(`${getApiBaseUrl()}${path}`, {
+  const baseUrl = await resolveApiBaseUrl();
+  const response = await fetch(`${baseUrl}${path}`, {
     ...init,
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
+      "Bypass-Tunnel-Reminder": "true",
       ...(init?.headers ?? {}),
     },
   });

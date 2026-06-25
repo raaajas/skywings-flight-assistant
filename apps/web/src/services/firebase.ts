@@ -12,9 +12,12 @@ const firebaseConfig = {
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
 
+import { getFirestore, doc, getDoc } from "firebase/firestore";
+
 export const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
+export const db = getFirestore(app);
 
 const useEmulators = import.meta.env.VITE_USE_FIREBASE_EMULATORS === "true";
 if (useEmulators) {
@@ -32,6 +35,34 @@ if (appCheckSiteKey) {
   });
 }
 
-export function getApiBaseUrl(): string {
-  return import.meta.env.VITE_API_BASE_URL ?? "/api";
+let cachedApiBaseUrl: string = "";
+
+export async function resolveApiBaseUrl(): Promise<string> {
+  if (cachedApiBaseUrl) {
+    return cachedApiBaseUrl;
+  }
+
+  const envUrl = import.meta.env.VITE_API_BASE_URL;
+  if (useEmulators || (envUrl && envUrl.includes("localhost"))) {
+    cachedApiBaseUrl = envUrl ?? "/api";
+    return cachedApiBaseUrl;
+  }
+
+  try {
+    const docRef = doc(db, "config", "api");
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      if (data && data.url) {
+        cachedApiBaseUrl = data.url;
+        console.log("Resolved API URL from Firestore:", cachedApiBaseUrl);
+        return cachedApiBaseUrl;
+      }
+    }
+  } catch (err) {
+    console.error("Failed to resolve API URL from Firestore:", err);
+  }
+
+  cachedApiBaseUrl = envUrl ?? "/api";
+  return cachedApiBaseUrl;
 }
